@@ -1,18 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Study Tracker</title>
-  <link rel="stylesheet" href="style.css">
+  <title>StudyFlow</title>
+  <style>
+    body {
+      background: black;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+      padding-top: 50px;
+    }
+    h1 { font-size: 40px; }
+    #timer { font-size: 60px; margin: 20px; }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+  </style>
 </head>
+
 <body>
 
-<h1>Study Tracker</h1>
+<h1>StudyFlow</h1>
+<div id="timer">00:00</div>
 
-<h2 id="timer">00:00</h2>
+<button onclick="start()">Start</button>
+<button onclick="pause()">Pause</button>
+<button onclick="reset()">Reset</button>
 
-<button onclick="startTimer()">Start</button>
-<button onclick="resetTimer()">Reset</button>
+<script>
+let sec = 0;
+let running = false;
+let interval;
 
-<script src="script.js"></script>
+function update() {
+  let m = Math.floor(sec / 60);
+  let s = sec % 60;
+  document.getElementById("timer").innerText =
+    `${m}:${s < 10 ? "0" : ""}${s}`;
+}
+
+function start() {
+  if (!running) {
+    running = true;
+    interval = setInterval(() => {
+      sec++;
+      update();
+    }, 1000);
+  }
+}
+
+function pause() {
+  running = false;
+  clearInterval(interval);
+}
+
+function reset() {
+  running = false;
+  clearInterval(interval);
+  sec = 0;
+  update();
+}
+</script>
+
 </body>
 </html>
