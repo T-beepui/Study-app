@@ -1,58 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>StudyFlow</title>
+  <title>StudyFlow Ultra</title>
   <style>
     body {
-      background: #0b0b0b;
+      background: #0f0f0f;
       color: white;
       font-family: Arial;
+      margin: 0;
       padding: 20px;
     }
 
-    h1 {
+    h1 { text-align: center; }
+
+    #timer {
+      font-size: 50px;
       text-align: center;
+      margin: 15px;
     }
 
-    input, button {
-      padding: 8px;
+    .center { text-align: center; }
+
+    button {
+      padding: 10px;
       margin: 5px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: none;
+      background: #1f1f1f;
+      color: white;
+    }
+
+    input {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #1f1f1f;
+      color: white;
     }
 
     .card {
-      border: 1px solid #333;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 10px;
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 15px;
     }
+
+    .topic {
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .topic:hover { background: #2a2a2a; }
 
     .done {
       text-decoration: line-through;
       color: gray;
     }
 
-    #timer {
-      font-size: 50px;
-      text-align: center;
-      margin: 20px;
-    }
-
-    .center {
-      text-align: center;
-    }
-
     .stats {
       text-align: center;
       margin: 10px;
+      font-size: 14px;
+      color: #aaa;
     }
   </style>
 </head>
 
 <body>
 
-<h1>StudyFlow</h1>
+<h1>StudyFlow Ultra</h1>
 
 <!-- TIMER -->
 <div id="timer">00:00:00</div>
@@ -63,17 +81,33 @@
   <button onclick="reset()">Reset</button>
 </div>
 
+<!-- POMODORO -->
+<div class="center">
+  <button onclick="startPomodoro()">Pomodoro 25m</button>
+</div>
+
 <div class="stats">
-  Today's Study: <span id="today">0</span> min
+  Today: <span id="today">0</span> min |
+  Streak: <span id="streak">0</span> |
+  Pomodoro: <span id="pomo">0</span>
 </div>
 
 <hr>
 
 <!-- SUBJECT -->
-<input id="subjectInput" placeholder="Add subject">
-<button onclick="addSubject()">Add</button>
+<div class="center">
+  <input id="subjectInput" placeholder="Add subject">
+  <button onclick="addSubject()">Add</button>
+</div>
 
 <div id="subjects"></div>
+
+<hr>
+
+<div class="center">
+  <button onclick="exportData()">Export</button>
+  <input type="file" onchange="importData(event)">
+</div>
 
 <script>
 let data = JSON.parse(localStorage.getItem("study")) || [];
@@ -96,6 +130,8 @@ function updateTimer() {
   let today = Math.floor(elapsed / 60);
   localStorage.setItem("today", today);
   document.getElementById("today").innerText = today;
+
+  checkStreak(today);
 }
 
 function start() {
@@ -117,18 +153,38 @@ function reset() {
   document.getElementById("timer").innerText = "00:00:00";
 }
 
-// LOAD
-window.onload = () => {
-  if (startTime) {
-    startTime = parseInt(startTime);
-    interval = setInterval(updateTimer, 1000);
+// POMODORO
+function startPomodoro() {
+  let pomo = parseInt(localStorage.getItem("pomo")) || 0;
+
+  let seconds = 1500;
+  let timer = setInterval(() => {
+    seconds--;
+
+    if (seconds <= 0) {
+      clearInterval(timer);
+      alert("Pomodoro Complete 🔥");
+      pomo++;
+      localStorage.setItem("pomo", pomo);
+      document.getElementById("pomo").innerText = pomo;
+    }
+  }, 1000);
+}
+
+// STREAK
+function checkStreak(today) {
+  let streak = parseInt(localStorage.getItem("streak")) || 0;
+  let last = localStorage.getItem("lastDay");
+  let todayStr = new Date().toDateString();
+
+  if (today > 0 && last !== todayStr) {
+    streak++;
+    localStorage.setItem("streak", streak);
+    localStorage.setItem("lastDay", todayStr);
   }
 
-  document.getElementById("today").innerText =
-    localStorage.getItem("today") || 0;
-
-  render();
-};
+  document.getElementById("streak").innerText = streak;
+}
 
 // SUBJECT
 function save() {
@@ -160,23 +216,65 @@ function toggle(i, j) {
   render();
 }
 
+// EXPORT / IMPORT
+function exportData() {
+  let dataStr = JSON.stringify(localStorage);
+  let blob = new Blob([dataStr], { type: "application/json" });
+  let a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "backup.json";
+  a.click();
+}
+
+function importData(e) {
+  let file = e.target.files[0];
+  let reader = new FileReader();
+
+  reader.onload = function() {
+    let obj = JSON.parse(reader.result);
+    Object.keys(obj).forEach(k => localStorage.setItem(k, obj[k]));
+    location.reload();
+  };
+
+  reader.readAsText(file);
+}
+
+// LOAD
+window.onload = () => {
+  if (startTime) {
+    startTime = parseInt(startTime);
+    interval = setInterval(updateTimer, 1000);
+  }
+
+  document.getElementById("today").innerText =
+    localStorage.getItem("today") || 0;
+
+  document.getElementById("streak").innerText =
+    localStorage.getItem("streak") || 0;
+
+  document.getElementById("pomo").innerText =
+    localStorage.getItem("pomo") || 0;
+
+  render();
+};
+
+// RENDER
 function render() {
   let html = "";
 
   data.forEach((sub, i) => {
     html += `<div class="card">
       <h3>${sub.name}</h3>
-      <button onclick="addTopic(${i})">+ Lecture</button>
-      <ul>`;
+      <button onclick="addTopic(${i})">+ Lecture</button>`;
 
     sub.topics.forEach((t, j) => {
-      html += `<li class="${t.done ? "done" : ""}"
+      html += `<div class="topic ${t.done ? "done" : ""}"
         onclick="toggle(${i}, ${j})">
         ${t.name}
-      </li>`;
+      </div>`;
     });
 
-    html += `</ul></div>`;
+    html += `</div>`;
   });
 
   document.getElementById("subjects").innerHTML = html;
