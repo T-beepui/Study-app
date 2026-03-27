@@ -7,17 +7,27 @@
       background: black;
       color: white;
       font-family: Arial;
-      text-align: center;
-      padding-top: 50px;
+      padding: 20px;
     }
-    h1 { font-size: 40px; }
-    #timer { font-size: 60px; margin: 20px; }
-    button {
-      padding: 10px 20px;
-      margin: 10px;
-      border: none;
+    h1 { text-align: center; }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
       border-radius: 8px;
-      font-size: 16px;
+      border: none;
+    }
+
+    .box {
+      border: 1px solid white;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+
+    .done {
+      text-decoration: line-through;
+      color: gray;
     }
   </style>
 </head>
@@ -25,45 +35,68 @@
 <body>
 
 <h1>StudyFlow</h1>
-<div id="timer">00:00</div>
 
-<button onclick="start()">Start</button>
-<button onclick="pause()">Pause</button>
-<button onclick="reset()">Reset</button>
+<h2>Add Subject</h2>
+<input id="subjectInput" placeholder="Enter subject">
+<button onclick="addSubject()">Add</button>
+
+<div id="subjects"></div>
 
 <script>
-let sec = 0;
-let running = false;
-let interval;
+let data = JSON.parse(localStorage.getItem("study")) || [];
 
-function update() {
-  let m = Math.floor(sec / 60);
-  let s = sec % 60;
-  document.getElementById("timer").innerText =
-    `${m}:${s < 10 ? "0" : ""}${s}`;
+function save() {
+  localStorage.setItem("study", JSON.stringify(data));
 }
 
-function start() {
-  if (!running) {
-    running = true;
-    interval = setInterval(() => {
-      sec++;
-      update();
-    }, 1000);
-  }
+function addSubject() {
+  let val = document.getElementById("subjectInput").value;
+  if (!val) return;
+
+  data.push({ name: val, topics: [] });
+  document.getElementById("subjectInput").value = "";
+  save();
+  render();
 }
 
-function pause() {
-  running = false;
-  clearInterval(interval);
+function addTopic(i) {
+  let val = prompt("Enter topic");
+  if (!val) return;
+
+  data[i].topics.push({ name: val, done: false });
+  save();
+  render();
 }
 
-function reset() {
-  running = false;
-  clearInterval(interval);
-  sec = 0;
-  update();
+function toggle(i, j) {
+  data[i].topics[j].done = !data[i].topics[j].done;
+  save();
+  render();
 }
+
+function render() {
+  let html = "";
+
+  data.forEach((sub, i) => {
+    html += `<div class="box">
+      <h3>${sub.name}</h3>
+      <button onclick="addTopic(${i})">+ Add Topic</button>
+      <ul>`;
+
+    sub.topics.forEach((t, j) => {
+      html += `<li class="${t.done ? "done" : ""}"
+        onclick="toggle(${i}, ${j})">
+        ${t.name}
+      </li>`;
+    });
+
+    html += `</ul></div>`;
+  });
+
+  document.getElementById("subjects").innerHTML = html;
+}
+
+render();
 </script>
 
 </body>
