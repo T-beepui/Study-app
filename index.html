@@ -4,22 +4,25 @@
   <title>StudyFlow</title>
   <style>
     body {
-      background: black;
+      background: #0b0b0b;
       color: white;
       font-family: Arial;
       padding: 20px;
     }
-    h1 { text-align: center; }
+
+    h1 {
+      text-align: center;
+    }
 
     input, button {
-      padding: 10px;
+      padding: 8px;
       margin: 5px;
       border-radius: 8px;
       border: none;
     }
 
-    .box {
-      border: 1px solid white;
+    .card {
+      border: 1px solid #333;
       padding: 10px;
       margin-top: 10px;
       border-radius: 10px;
@@ -29,6 +32,21 @@
       text-decoration: line-through;
       color: gray;
     }
+
+    #timer {
+      font-size: 50px;
+      text-align: center;
+      margin: 20px;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .stats {
+      text-align: center;
+      margin: 10px;
+    }
   </style>
 </head>
 
@@ -36,15 +54,83 @@
 
 <h1>StudyFlow</h1>
 
-<h2>Add Subject</h2>
-<input id="subjectInput" placeholder="Enter subject">
+<!-- TIMER -->
+<div id="timer">00:00:00</div>
+
+<div class="center">
+  <button onclick="start()">Start</button>
+  <button onclick="pause()">Pause</button>
+  <button onclick="reset()">Reset</button>
+</div>
+
+<div class="stats">
+  Today's Study: <span id="today">0</span> min
+</div>
+
+<hr>
+
+<!-- SUBJECT -->
+<input id="subjectInput" placeholder="Add subject">
 <button onclick="addSubject()">Add</button>
 
 <div id="subjects"></div>
 
 <script>
 let data = JSON.parse(localStorage.getItem("study")) || [];
+let startTime = localStorage.getItem("startTime") || null;
+let interval;
 
+// TIMER
+function updateTimer() {
+  if (!startTime) return;
+
+  let elapsed = Math.floor((Date.now() - startTime) / 1000);
+
+  let h = Math.floor(elapsed / 3600);
+  let m = Math.floor((elapsed % 3600) / 60);
+  let s = elapsed % 60;
+
+  document.getElementById("timer").innerText =
+    `${h}:${m<10?"0":""}${m}:${s<10?"0":""}${s}`;
+
+  let today = Math.floor(elapsed / 60);
+  localStorage.setItem("today", today);
+  document.getElementById("today").innerText = today;
+}
+
+function start() {
+  if (!startTime) {
+    startTime = Date.now();
+    localStorage.setItem("startTime", startTime);
+  }
+  interval = setInterval(updateTimer, 1000);
+}
+
+function pause() {
+  clearInterval(interval);
+}
+
+function reset() {
+  clearInterval(interval);
+  startTime = null;
+  localStorage.removeItem("startTime");
+  document.getElementById("timer").innerText = "00:00:00";
+}
+
+// LOAD
+window.onload = () => {
+  if (startTime) {
+    startTime = parseInt(startTime);
+    interval = setInterval(updateTimer, 1000);
+  }
+
+  document.getElementById("today").innerText =
+    localStorage.getItem("today") || 0;
+
+  render();
+};
+
+// SUBJECT
 function save() {
   localStorage.setItem("study", JSON.stringify(data));
 }
@@ -60,7 +146,7 @@ function addSubject() {
 }
 
 function addTopic(i) {
-  let val = prompt("Enter topic");
+  let val = prompt("Lecture name?");
   if (!val) return;
 
   data[i].topics.push({ name: val, done: false });
@@ -78,9 +164,9 @@ function render() {
   let html = "";
 
   data.forEach((sub, i) => {
-    html += `<div class="box">
+    html += `<div class="card">
       <h3>${sub.name}</h3>
-      <button onclick="addTopic(${i})">+ Add Topic</button>
+      <button onclick="addTopic(${i})">+ Lecture</button>
       <ul>`;
 
     sub.topics.forEach((t, j) => {
@@ -95,8 +181,6 @@ function render() {
 
   document.getElementById("subjects").innerHTML = html;
 }
-
-render();
 </script>
 
 </body>
